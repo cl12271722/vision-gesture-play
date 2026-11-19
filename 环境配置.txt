@@ -1,0 +1,121 @@
+# 项目环境清单（Python + MediaPipe 手势识别 + Pygame 游戏）
+
+> 
+> 适配：**指尖识 E—— 手势体感视力闯关游戏**，普通笔记本就能跑，不需要显卡，CPU 足够
+> 推荐统一用 Python 3.10（兼容性最好，MediaPipe、pygame 都稳，不要用 3.13 最新版容易踩坑）
+
+## 一、核心依赖包（直接复制这一整行到 cmd /vscode 终端安装）
+
+```
+pip install mediapipe opencv-python pygame numpy
+```
+
+包作用说明：
+
+1. `mediapipe`：谷歌预训练手势关键点模型，核心！用来识别手、计算手指指向方向
+2. `opencv-python`：摄像头读取、画面绘制、人脸检测（你提到的人脸检测功能也靠它）
+3. `pygame`：游戏主窗口、绘制下落 E 字符、计分、动画、界面 UI
+4. `numpy`：坐标计算，判断手指指向上下左右
+
+## 二、可选加分功能额外包（看你们要不要做）
+
+- 如果想把成绩保存成 csv 表格：
+
+```
+pip install pandas
+```
+
+- 如果想做简单 GUI 窗口（不想只用 pygame）：`tkinter` python 自带，不用装
+- 不需要 torch、深度学习训练框架！我们是调用现成预训练模型，不用自己训练网络，省算力
+
+## 三、推荐环境管理方案（两人组队强烈建议，避免环境不一样、他能跑你报错）
+
+### 方案 A：Anaconda（推荐，你之前就在用 conda）
+
+1. 新建专属环境
+
+```
+conda create -n finger_e_game python=3.10
+conda activate finger_e_game
+```
+
+2. 再执行上面的 pip 安装命令
+
+> 
+> 好处：和别的项目环境隔离，不会版本冲突，队友可以直接导出环境文件给他
+> 导出环境给队友：
+
+```
+conda env export > environment.yml
+```
+
+队友拿到后一键复现：
+
+```
+conda env create -f environment.yml
+```
+
+### 方案 B：纯 Python 虚拟环境（不用 Anaconda）
+
+```
+python -m venv venv
+# windows激活
+venv\Scripts\activate
+```
+
+然后 pip 安装依赖
+
+## 四、硬件 & 系统要求
+
+✅ 必备：电脑自带摄像头（或者外接 USB 摄像头）
+✅ 系统：Windows10/11 优先，Mac 也可以（mac 摄像头权限要手动给终端 /vscode）
+⚠️ 注意：
+
+- Windows：打开 VSCode 的时候，**不要右键管理员打开**，会拿不到摄像头权限
+- Mac：设置→隐私与安全性，给 VSCode、终端开启摄像头权限
+- 光线差的时候手势识别容易飘，这个是 MediaPipe 本身特性，写进报告的不足里就行
+
+## 五、测试环境是否装好的验证代码（复制到 jupyter 或者 py 文件直接跑，看能不能打开摄像头识别手）
+
+```
+import mediapipe as mp
+import cv2
+
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.6)
+mp_draw = mp.solutions.drawing_utils
+
+cap = cv2.VideoCapture(0)
+print("摄像头启动，伸出手看看，按q退出")
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    res = hands.process(frame_rgb)
+    if res.multi_hand_landmarks:
+        for hand in res.multi_hand_landmarks:
+            mp_draw.draw_landmarks(frame, hand, mp_hands.HAND_CONNECTIONS)
+    cv2.imshow("hand test", frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+cap.release()
+cv2.destroyAllWindows()
+```
+
+运行成功：弹出摄像头窗口，能画出手上 21 个关键点，环境就没问题。
+
+## 六、组队小提示
+
+两个人**Python 版本、包版本尽量一致**，不然会出现 “我电脑能跑，你电脑报错”。
+可以把 `requirements.txt` 发给队友：
+
+```
+pip freeze > requirements.txt
+```
+
+队友一键安装：
+
+```
+pip install -r requirements.txt
+```
